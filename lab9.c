@@ -11,7 +11,7 @@
 #include <ctype.h>
 
 char * cleanQuote(char quote[]); //replaces '\r' with '\n'
-char * changeQuote(char quote[]); //turn normal accent to southie accent
+void changeQuote(char quote[], FILE * output);
 
 int main(void){
     FILE * input; //this is the file pointer to the sherlock.txt
@@ -65,7 +65,20 @@ int main(void){
         }
         
         //if multi-paragraph, don't print out quotation mark at end
-        fprintf(output, multi ? "\"%s" : "\"%s\"", cleanQuote(sentence));
+        /* fprintf(output, multi ? "\"%s" : "\"%s\"", cleanQuote(sentence)); */
+        if (multi == 1){
+            fprintf(output, "\"");
+            changeQuote(cleanQuote(sentence), output);
+            fseek(output, -1, SEEK_CUR);
+            /* fprintf(output, "\"%s", cleanQuote(sentence)); */
+        }
+        else{
+            fprintf(output, "\"");
+            changeQuote(cleanQuote(sentence), output);
+            /* fprintf(output, "\"%s\"", cleanQuote(sentence)); */
+            fseek(output, -1, SEEK_CUR);
+            fprintf(output, "\"");
+        }
 
         //this scans for text between quotation marks
         fscanf(input, "%[^\"]", non);
@@ -93,5 +106,33 @@ char * cleanQuote(char quote[]){
 
 //this function takes in the dialogue without quotation mark
 //and changes certain words into southie accent
-char * changeQuote(char quote[]){
+void changeQuote(char quote[], FILE * output){
+    //split the quotation into tokens
+    char * token;
+    token = strtok(quote, " ");
+
+    //go through every word
+    while (token != NULL){
+        //at most, each word is increased by 2 letter size
+        int n = strlen(token);
+        char word[n + 3];
+        //copy the token into sample word
+        strcpy(word, token);
+
+        //now, let the southie accent conversion begin
+        
+        //check for the word "very"
+        //and replace it with "wicked"
+        if (strcmp(word, "very") == 0){
+            strcpy(word, "wicked");
+        }
+        else if (strcmp(word, "Very") == 0){
+            strcpy(word, "Wicked");
+        }
+
+        //after the conversion or no-conversion,
+        //write the word to the output file
+        fprintf(output, "%s ", word);
+        token = strtok(NULL, " "); //advance to the next tokenized word
+    }    
 }
