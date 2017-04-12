@@ -10,14 +10,11 @@
 #include <string.h>
 
 char * cleanQuote(char quote[]); //replaces '\r' with '\n'
-void fixMultiParagraph();
+char * changeQuote(char quote[]); //turn normal accent to southie accent
 
 int main(void){
     FILE * input; //this is the file pointer to the sherlock.txt
     FILE * output; //this is the file pointer to the southie-sherlock.txt
-    int tracker;
-    int startPos = 0; //starting position of quotation
-    int endPos = 0; //ending position of quotation
 
     //gotta make sure the file is able to be opened first
     if ((input = fopen("sherlock.txt", "r+")) == NULL){ //the file pointer opens the file in update mode (read and write)
@@ -39,11 +36,9 @@ int main(void){
     //quote and non-quote
     while (!feof(input)){
         fscanf(input, "\"%[^\"]\"", sentence);
-        printf("\"%s\"", cleanQuote(sentence));
-        fprintf(output, "\"%s\"", cleanQuote(sentence));
+        fprintf(output, "\"%s\"", cleanQuote(changeQuote(sentence)));
 
         fscanf(input, "%[^\"]", non);
-        printf("%s", cleanQuote(non));
         fprintf(output, "%s", cleanQuote(non));
     }
 
@@ -66,6 +61,7 @@ char * cleanQuote(char quote[]){
     return quote;
 }
 
-void fixMultiParagraph(){
-
+char * changeQuote(char quote[]){
+    char * token;
+    token = strtok(quote, " ");
 }
