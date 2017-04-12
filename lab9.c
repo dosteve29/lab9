@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 char * cleanQuote(char quote[]); //replaces '\r' with '\n'
 char * changeQuote(char quote[]); //turn normal accent to southie accent
@@ -15,6 +16,8 @@ char * changeQuote(char quote[]); //turn normal accent to southie accent
 int main(void){
     FILE * input; //this is the file pointer to the sherlock.txt
     FILE * output; //this is the file pointer to the southie-sherlock.txt
+    FILE * quote;
+    FILE * nonQuote;
 
     //gotta make sure the file is able to be opened first
     if ((input = fopen("sherlock.txt", "r+")) == NULL){ //the file pointer opens the file in update mode (read and write)
@@ -24,26 +27,45 @@ int main(void){
 
     //the output is created if not existing and overwritten every time
     output = fopen("southie-sherlock.txt", "w+");
+    quote = fopen("quotes.txt", "w+");
+    nonQuote = fopen("non.txt", "w+");
     char sentence[5000]; //this is the char array that contains the quotation
     char non[5000];
 
     //this is required to get the first part of non quotation
     fscanf(input, "%[^\"]", non);
     fprintf(output, "%s", cleanQuote(non));
+    fprintf(nonQuote, "%s", cleanQuote(non));
 
     //this will loop through the whole text
     //while printing back and forth between
     //quote and non-quote
+    int multi = 0;
     while (!feof(input)){
         fscanf(input, "\"%[^\"]\"", sentence);
-        fprintf(output, "\"%s\"", cleanQuote(changeQuote(sentence)));
+        int i;
+        for (i = 0; i < 5000; i++){
+            if (sentence[i] == '\r' && sentence[i + 1] == '\r'){
+                sentence[i] = '\0';
+                fseek(input, -3, SEEK_CUR);
+                multi = 1;
+            }
+        }
+        
+        fprintf(output, multi ? "\"%s" : "\"%s\"", cleanQuote(sentence));
+        fprintf(quote, "%s", cleanQuote(sentence));
 
         fscanf(input, "%[^\"]", non);
         fprintf(output, "%s", cleanQuote(non));
+        fprintf(nonQuote, "%s", cleanQuote(non));
+
+        multi = 0;
     }
 
     fclose(input); //always close the pointer
     fclose(output);
+    fclose(quote);
+    fclose(nonQuote);
 }
 
 
@@ -61,7 +83,6 @@ char * cleanQuote(char quote[]){
     return quote;
 }
 
+
 char * changeQuote(char quote[]){
-    char * token;
-    token = strtok(quote, " ");
 }
