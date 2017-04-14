@@ -10,8 +10,10 @@
 #include <string.h>
 #include <ctype.h>
 
+//function prototypes
 char * cleanQuote(char quote[]); //replaces '\r' with '\n'
 void changeQuote(char quote[], FILE * output);
+int isVowel(char c); //returns 1 if vowel, 0 if non-vowel
 
 int main(void){
     FILE * input; //this is the file pointer to the sherlock.txt
@@ -26,7 +28,7 @@ int main(void){
     //the output is created if not existing and overwritten every time
     output = fopen("southie-sherlock.txt", "w+");
     char sentence[5000]; //this is the char array that contains the quotation
-    char non[5000];
+    char non[5000]; //this is the char array that contains the text other than dialogue
 
     //this is required to get the first part of non quotation
     fscanf(input, "%[^\"]", non);
@@ -34,12 +36,12 @@ int main(void){
 
     int multi = 0; //this tracks if the quotation is multiparagraph
 
-    //this will loop through the whole text
+    //this will loop through the whole text after the initial non-quote
     //while printing back and forth between
     //quote and non-quote
     while (!feof(input)){ //go through the text file until EOF
         fscanf(input, "\"%[^\"]\"", sentence); //store dialogues without quotation marks into sentence array
-        //loop through the whole dialogue to check for multi-paragraph. 
+        //
         //multi-paragraph:
         // " jdsfklafdskjflafjlk
         //   skfjlsadkjfslfksajf
@@ -51,6 +53,9 @@ int main(void){
         //
         //   as shown above, there are multiple quotation marks for one dialogue.
         //   this messes up the scanner format for dialogue
+        //
+
+        //loop through the whole dialogue (sentence char array) to check for multi-paragraph. 
         int i;
         for (i = 0; i < 5000; i++){ 
             if (sentence[i] == '\r' && sentence[i + 1] == '\r'){ //if the extracted is multiparagraph
@@ -65,28 +70,26 @@ int main(void){
         }
         
         //if multi-paragraph, don't print out quotation mark at end
-        /* fprintf(output, multi ? "\"%s" : "\"%s\"", cleanQuote(sentence)); */
         if (multi == 1){
             fprintf(output, "\"");
             changeQuote(cleanQuote(sentence), output);
-            fseek(output, -1, SEEK_CUR);
-            /* fprintf(output, "\"%s", cleanQuote(sentence)); */
+            fseek(output, -1, SEEK_CUR); 
         }
         else{
             fprintf(output, "\"");
             changeQuote(cleanQuote(sentence), output);
-            /* fprintf(output, "\"%s\"", cleanQuote(sentence)); */
-            fseek(output, -1, SEEK_CUR);
+            fseek(output, -1, SEEK_CUR); 
             fprintf(output, "\"");
         }
 
-        //this scans for text between quotation marks
+        /* //this scans for text between quotation marks */
         fscanf(input, "%[^\"]", non);
         fprintf(output, "%s", cleanQuote(non));
         multi = 0; //tracker reset
     }
 
-    fclose(input); //always close the pointer
+    //always close the pointer
+    fclose(input); 
     fclose(output);
 }
 
@@ -109,30 +112,144 @@ char * cleanQuote(char quote[]){
 void changeQuote(char quote[], FILE * output){
     //split the quotation into tokens
     char * token;
-    token = strtok(quote, " ");
+
+    //the delimiter is newline and whitespace
+    token = strtok(quote, " \n");
 
     //go through every word
     while (token != NULL){
-        //at most, each word is increased by 2 letter size
-        int n = strlen(token);
-        char word[n + 3];
-        //copy the token into sample word
-        strcpy(word, token);
+        int n = strlen(token); //length of token
+        char word[n + 3]; //the converted word
+        int punc = 0; //tracker if word has punctuation at end
+        char punctuation[100]; //contains the punctuation at the end of word
 
-        //now, let the southie accent conversion begin
+        //if there is punctuation at the end
+        if (ispunct(token[n - 1])){
+            punc = 1; //mark the loop that it has punctuation
+            punctuation[0] = token[n - 1]; //get the punctuation
+            punctuation[1] = '\0'; //null-terminating to complete the construction of string 
+            strcpy(word, token); //copy the word
+            word[n - 1] = '\0'; //remove the punctuation so it doesn't mess with southie accent conversion
+        }
+        else{
+            punc = 0; //no punctuation
+            strcpy(word, token); //resume regularly
+        }
+
+        int m = strlen(word); //new length of the word
         
-        //check for the word "very"
-        //and replace it with "wicked"
-        if (strcmp(word, "very") == 0){
+        //this is basically the if-else branch for basic rules and exceptions
+        //for southie-accent
+        //pretty self-explanatory
+        if (strstr(token, "very") != NULL){
             strcpy(word, "wicked");
-        }
-        else if (strcmp(word, "Very") == 0){
+            //adds punctuation at end if the tracker says so
+            if (punc){
+                strcat(word, punctuation);
+            } 
+        } 
+        else if (strstr(token, "Very") != NULL){
             strcpy(word, "Wicked");
+            if (punc){
+                strcat(word, punctuation);
+            }
         }
+        else if (word[m - 1] == 'a' && m != 1){
+            char add[] = "r";
+            strcat(word, add);
+            if (punc){
+                strcat(word, punctuation);
+            }
+        }
+        else if (word[m - 1] == 'r' && word[m - 2] == 'o' && word[m - 3] == 'o'){
+            word[m - 1] = '\0';
+            char add[] = "wah";
+            strcat(word, add);
+            if (punc){
+                strcat(word, punctuation);
+            } 
+        }
+        else if (word[m - 1] == 'R' && word[m - 2] == 'O' && word[m - 3] == 'O'){
+            word[m - 1] = '\0';
+            char add[] = "WAH";
+            strcat(word, add);
+            if (punc){
+                strcat(word, punctuation);
+            } 
+        }
+        else if (word[m - 1] == 'r' && word[m - 2] == 'e' && word[m - 3] == 'e'){
+            word[m - 1] = '\0';
+            char add[] = "yah";
+            strcat(word, add);
+            if (punc){
+                strcat(word, punctuation);
+            } 
+        }
+        else if (word[m - 1] == 'R' && word[m - 2] == 'E' && word[m - 3] == 'E'){
+            word[m - 1] = '\0';
+            char add[] = "YAH";
+            strcat(word, add);
+            if (punc){
+                strcat(word, punctuation);
+            } 
+        }
+        else if (word[m - 1] == 'r' && word[m - 2] == 'i'){
+            word[m - 1] = '\0';
+            char add[] = "yah";
+            strcat(word, add);
+            if (punc){
+                strcat(word, punctuation);
+            }
+        }
+        else if (word[m - 1] == 'R' && word[m - 2] == 'I'){
+            char add[] = "YAH";
+            word[m - 1] = '\0';
+            strcat(word, add);
+            if (punc){
+                strcat(word, punctuation);
+            }
+        }
+        else if (strchr(word, 'r') != NULL){
+            int i;
+            for (i = 1; i < m; i++){
+                if (word[i] == 'r' && isVowel(word[i - 1])){
+                    word[i] = 'h';
+                }
+            }            
 
-        //after the conversion or no-conversion,
+            if (punc){
+                strcat(word, punctuation);
+            }
+        }
+        //no changes to be done.
+        else{
+            strcpy(word, token);
+        }
         //write the word to the output file
         fprintf(output, "%s ", word);
-        token = strtok(NULL, " "); //advance to the next tokenized word
+        token = strtok(NULL, " \n"); //advance to the next tokenized word
+        //reset the jawns
+        memset(word, 0, sizeof word);
+        memset(punctuation, 0, sizeof punctuation);
+        punc = 0;
     }    
+}
+
+//returns 1 if vowel, 0 if non-vowel
+int isVowel(char c){
+    switch(c){
+        case 'a':
+        case 'e':
+        case 'i':
+        case 'o':
+        case 'u':
+        case 'A':
+        case 'E':
+        case 'I':
+        case 'O':
+        case 'U':
+            return 1;
+        default:
+            return 0;
+    }
 }
